@@ -3,15 +3,22 @@
     init: function(elevators, floors) {
         var elevator = elevators[0]; // Let's use the first elevator
 
+        var upFloors = [];
+        var downFloors = [];
+
+        for (let i = 0; i < floors.length; i++) {
+            floors[i].on("up_button_pressed", function() {
+               if (!upFloors.includes(floors[i].floorNum()))
+                    upFloors.push(floors[i].floorNum());
+            });
+            floors[i].on("down_button_pressed", function() {
+                if (!downFloors.includes(floors[i].floorNum()))
+                    downFloors.push(floors[i].floorNum());
+            });
+        }
+        
         // Whenever the elevator is idle (has no more queued destinations) ...
         elevator.on("idle", function() {
-            // let's go to all the floors (or did we forget one?)
-            /*if (elevator.currentFloor() == 0)
-                for (let i = 0; i < floors.length; i++)
-                    elevator.goToFloor(i);
-            else
-                for (let i = floors.length - 1; i >= 0; i--)
-                    elevator.goToFloor(i);*/
         });
 
         // When a passenger presses a button to go to a floor...
@@ -20,14 +27,19 @@
         });
         
         elevator.on("passing_floor", function(floorNum, direction) {
-            let floor = floors[floorNum];
-            //if (direction == "up" && floor.up_button_)
-
+            if (direction === "up" && upFloors.includes(floorNum)) {
+                let pos = upFloors.indexOf(floorNum);
+                let removedFloor = upFloors.splice(pos, 1);
+                elevator.goToFloor(floorNum, true);
+            } else if (direction === "down" && downFloors.includes(floorNum)) {
+                let pos = downFloors.indexOf(floorNum);
+                let removedFloor = downFloors.splice(pos, 1);
+                elevator.goToFloor(floorNum, true);
+            }
         });
         
         elevator.on("stopped_at_floor", function(floorNum) {
             if(elevator.getPressedFloors().length > 0) {
-                //goToPressedFloors(elevator);
                 goToFirstPressedFloor(elevator);
             }
             else
@@ -55,6 +67,6 @@
         }
     },
     update: function(dt, elevators, floors) {
-        // We normally don't need to do anything here
+
     }
 }
